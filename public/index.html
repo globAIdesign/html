@@ -60,7 +60,9 @@
 
     <!-- 2. DEĞİŞİKLİK: Script bölümü tamamen sunucu odaklı çalışacak şekilde yeniden yazıldı -->
     <script>
-        // HTML elementlerini seç (sadece modal için gerekli olanlar)
+         <!-- public/index.html dosyasının sonundaki script bölümü -->
+
+        // HTML elementlerini seç (modal için gerekli olanlar)
         const galeriElementi = document.getElementById('gallery-container');
         const modal = document.getElementById('myModal');
         const modalImg = document.getElementById('modalImg');
@@ -68,82 +70,79 @@
         const modalDesc = document.getElementById('modalDesc');
         const closeBtn = document.getElementById('close-btn');
 
-    const API_URL = 'https://html-vq8m.onrender.com'; // <<< DEĞİŞTİR
+        // --- EN ÖNEMLİ SATIR ---
+        // Render'daki sunucunun tam adresini buraya yaz
+        const API_URL = 'https://galeriproject-server.onrender.com'; // LÜTFEN BURAYI KENDİ RENDER URL'N İLE DEĞİŞTİR
 
-    // ... createGalleryItem fonksiyonu aynı kalıyor ...
-
-    // Sayfa yüklendiğinde sunucudan fotoğrafları çek
-    window.onload = function() {
-        fetch(`${API_URL}/photos`) // <<< DEĞİŞTİR
-            .then(response => response.json())
-            .then(photos => {
-                // ... galeriyi doldurma kodu aynı ...
-            })
-            .catch(error => console.error('Galeriyi doldururken hata:', error));
-    };
-
-    // Formu yakala ve sunucuya isteği JavaScript ile gönder
-    const uploadForm = document.querySelector('form');
-    uploadForm.addEventListener('submit', async (event) => {
-        event.preventDefault(); // Formun normal gönderimini engelle
-
-        const formData = new FormData(uploadForm);
-        const submitButton = uploadForm.querySelector('button');
-        submitButton.textContent = 'Yükleniyor...';
-        submitButton.disabled = true;
-
-        try {
-            const response = await fetch(`${API_URL}/upload`, { // <<< DEĞİŞTİR
-                method: 'POST',
-                body: formData // FormData'yı doğrudan gönder
-            });
-
-            if (response.ok) {
-                // Başarılıysa sayfayı yeniden yükleyerek galeriyi güncelle
-                window.location.reload();
-            } else {
-                alert('Fotoğraf yüklenirken bir hata oluştu.');
-                submitButton.textContent = 'Yükle';
-                submitButton.disabled = false;
-            }
-        } catch (error) {
-            console.error('Yükleme hatası:', error);
-            alert('Sunucuya bağlanırken bir hata oluştu.');
-            submitButton.textContent = 'Yükle';
-            submitButton.disabled = false;
-        }
-    });
         // Galeriye bir eleman ekleyen ve modal tıklama olayını bağlayan fonksiyon
         function createGalleryItem(foto) {
             const galleryItem = document.createElement('div');
             galleryItem.classList.add('gallery-item');
-            // Gelen veritabanı kaydının 'path' alanını kullan
             galleryItem.innerHTML = `<img src="${foto.path}" alt="${foto.title}">`;
 
-            // Tıklayınca modalı açma olayını her resim için ekle
             galleryItem.addEventListener('click', () => {
                 modal.style.display = 'flex'; 
-                modalImg.src = foto.path; // Tıklanan resmin yolunu kullan
-                modalTitle.textContent = foto.title; // Tıklanan resmin başlığını kullan
-                modalDesc.textContent = foto.description; // Tıklanan resmin açıklamasını kullan
+                modalImg.src = foto.path;
+                modalTitle.textContent = foto.title;
+                modalDesc.textContent = foto.description;
             });
             
             galeriElementi.appendChild(galleryItem);
         }
 
-        // Sayfa yüklendiğinde sunucudan fotoğrafları çek
+        // Sayfa yüklendiğinde DOĞRU sunucudan fotoğrafları çek
         window.onload = function() {
-            fetch('/photos')
-                .then(response => response.json())
+            fetch(`${API_URL}/photos`) // API_URL kullanılıyor
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Sunucudan yanıt alınamadı: ' + response.statusText);
+                    }
+                    return response.json();
+                })
                 .then(photos => {
-                    galeriElementi.innerHTML = ''; // Önce galeriyi temizle
-                    // Sunucudan gelen her fotoğraf için bir galeri elemanı oluştur
+                    galeriElementi.innerHTML = '';
                     photos.forEach(createGalleryItem);
                 })
-                .catch(error => console.error('Galeriyi doldururken hata:', error));
+                .catch(error => {
+                    console.error('Galeriyi doldururken hata:', error);
+                    // Kullanıcıya bir hata mesajı gösterebiliriz
+                    galeriElementi.innerHTML = '<p style="color: red;">Galeri yüklenemedi. Lütfen daha sonra tekrar deneyin.</p>';
+                });
         };
 
-        // Modalı kapatma olayları (bunlar aynı kaldı)
+        // Formu yakala ve isteği DOĞRU sunucuya gönder
+        const uploadForm = document.querySelector('form');
+        uploadForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const formData = new FormData(uploadForm);
+            const submitButton = uploadForm.querySelector('button');
+            submitButton.textContent = 'Yükleniyor...';
+            submitButton.disabled = true;
+
+            try {
+                const response = await fetch(`${API_URL}/upload`, { // API_URL kullanılıyor
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    const errorData = await response.text();
+                    alert('Fotoğraf yüklenirken bir hata oluştu: ' + errorData);
+                    submitButton.textContent = 'Yükle';
+                    submitButton.disabled = false;
+                }
+            } catch (error) {
+                console.error('Yükleme hatası:', error);
+                alert('Sunucuya bağlanırken bir hata oluştu.');
+                submitButton.textContent = 'Yükle';
+                submitButton.disabled = false;
+            }
+        });
+
+        // Modalı kapatma olayları
         closeBtn.addEventListener('click', () => {
             modal.style.display = 'none';
         });
@@ -153,6 +152,7 @@
                 modal.style.display = 'none';
             }
         });
+    </script>
 
     </script>
 
