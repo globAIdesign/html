@@ -78,6 +78,8 @@
         function createGalleryItem(foto) {
             const galleryItem = document.createElement('div');
             galleryItem.classList.add('gallery-item');
+            const imageUrl = foto.path;
+const optimizedUrl = imageUrl.replace('/upload/', '/upload/q_auto,f_auto,w_500/');
             galleryItem.innerHTML = `<img src="${foto.path}" alt="${foto.title}">`;
 
             galleryItem.addEventListener('click', () => {

@@ -23,11 +23,14 @@ cloudinary.config({
 });
 
 // --- YENİ: Cloudinary Depolama Ayarı ---
+// server.js içinde
 const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
-        folder: 'fotogaleri', // Resimlerin Cloudinary'de saklanacağı klasör adı
-        allowed_formats: ['jpeg', 'png', 'jpg']
+        folder: 'fotogaleri',
+        allowed_formats: ['jpeg', 'png', 'jpg'],
+        // YENİ EKLENEN SATIR: Yüklenirken optimizasyon yap
+        transformation: [{ width: 1920, height: 1080, crop: "limit", quality: "auto" }]
     }
 });
 const upload = multer({ storage: storage });
